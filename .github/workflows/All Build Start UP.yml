@@ -57,6 +57,7 @@ jobs:
           elif [[ "$BATCH" == "4" ]]; then
             FILE_LIST=(
               "realme_gt6_v"
+              "realme_gt5_v"
               "realme_gt7pro_v"
               "realme_gt5pro_v"
               "realme_gt7pro-speed_v"
