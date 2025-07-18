@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       BATCH:
-        description: "9个一组分批并行-选择分支(1-3)"
+        description: "9个一组分批并行-选择分支(1-4)"
         required: true
         default: "1"
 
@@ -54,6 +54,14 @@ jobs:
               "oneplus_pad_2_pro"
               "oneplus_pad_3"
             )
+          elif [[ "$BATCH" == "4" ]]; then
+            FILE_LIST=(
+              "realme_gt6_v"
+              "realme_gt7pro_v"
+              "realme_gt5pro_v"
+              "realme_gt7pro-speed_v"
+              "realme_gtneo6_v"
+              )
           else
             echo "无效的 BATCH 值: $BATCH"
             exit 1
@@ -85,7 +93,7 @@ jobs:
       - name: Call Original Workflow
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: Build OnePlus_SukiSU Ultra All
+          workflow: Build OnePlus and Realme SukiSU Ultra
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: |
             {
@@ -167,6 +175,15 @@ jobs:
               "oneplus_pad_2_pro"
               "oneplus_pad_3"
             )
+            )
+          elif [[ "$BATCH" == "4" ]]; then
+            FILE_LIST=(
+              "realme_gt6_v"
+              "realme_gt7pro_v"
+              "realme_gt5pro_v"
+              "realme_gt7pro-speed_v"
+              "realme_gtneo6_v"
+              )
           else
             echo "无效的 BATCH 值: $BATCH"
             exit 1
