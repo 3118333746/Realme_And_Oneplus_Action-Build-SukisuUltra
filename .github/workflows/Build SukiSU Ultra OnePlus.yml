@@ -1,4 +1,4 @@
-name: Build OnePlus_SukiSU Ultra All
+name: Build OnePlus and Realme SukiSU Ultra
 on:
   workflow_dispatch:
     inputs:
@@ -6,7 +6,7 @@ on:
         type: choice
         description: "配置文件"
         required: true
-        default: oneplus_ace2_pro_v
+        default: realme_gt6_v
         options:
           - oneplus_nord_ce4_lite_5g_v
           - oneplus_nord_ce4_v
@@ -34,6 +34,12 @@ on:
           - oneplus_13s
           - oneplus_pad_2_pro
           - oneplus_pad_3
+          - realme_gt6_v
+          - realme_gt5pro_v
+          - realme_gt5_v
+          - realme_gt7pro_v
+          - realme_gt7pro-speed_v
+          - realme_gtneo6_v
       SUSFS_CI:
         type: choice
         description: "下载SUSFS模块调用方式"
@@ -47,7 +53,7 @@ on:
         type: string
         description: "分支名(不可留空)/自定义版本标识(留空不修改)"
         required: false
-        default: "susfs-main/Numbersf"
+        default: "susfs-main/inkdye"
       BUILD_TIME:
         type: string
         description: "自定义构建时间 (输入F使用当前时间)"
@@ -130,8 +136,13 @@ jobs:
             ["oneplus_13s"]="sm8750 sun android15 6.6"
             ["oneplus_pad_2_pro"]="sm8750 sun android15 6.6"
             ["oneplus_pad_3"]="sm8750 sun android15 6.6"
+            ["realme_gt6"]="sm8650 pineapple android14 6.1"
+            ["realme_gt5pro"]="sm8650 pineapple android14 6.1"
+            ["realme_gt5"]="sm8550 kalama android13 5.15"
+            ["realme_gt7pro"]="sm8750 sun android15 6.6"
+            ["realme_gt7pro-speed"]="sm8750 sun android15 6.6"
+            ["realme_gtneo6_v"]="sm8635 pineapple android14 6.1"
           )
-
           get_combination() {
             local key="$1"
             while true; do
@@ -146,7 +157,6 @@ jobs:
               fi
             done
           }
-
           # Try to resolve FILE to a valid combination 尝试寻找机型
           COMBINATION="$(get_combination "$FILE")" || {
             echo "❌ Unknown FILE: $FILE"
@@ -156,9 +166,7 @@ jobs:
             done
             exit 1
           }
-
           read CPU CPUD ANDROID_VERSION KERNEL_VERSION <<< "$COMBINATION"
-
           echo "✅ Valid combination: FILE=$FILE, CPU=$CPU, CPUD=$CPUD, ANDROID_VERSION=$ANDROID_VERSION, KERNEL_VERSION=$KERNEL_VERSION"
           echo "CPU=$CPU" >> $GITHUB_ENV
           echo "CPUD=$CPUD" >> $GITHUB_ENV
@@ -171,7 +179,6 @@ jobs:
           else
             echo "BUILD_METHOD=gki" >> $GITHUB_ENV
           fi
-
       - name: Check Disk Space
         run: df -h
 
@@ -193,18 +200,15 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           free -h
-
       - name: Set Cache Environment
         run: |
           echo "CCACHE_DIR=$HOME/.ccache_${{ github.event.inputs.FILE }}" >> $GITHUB_ENV
           mkdir -p "$HOME/.ccache_${{ github.event.inputs.FILE }}"
           echo "set: $HOME/.ccache_${{ github.event.inputs.FILE }}"
-
       - name: Configure Git
         run: |
           git config --global user.name "Numbersf"
           git config --global user.email "263623064@qq.com"
-
       - name: Configure APTC
         run: |
           APT_CACHE_DIR="$HOME/apt-cache"
@@ -215,7 +219,6 @@ jobs:
           echo "Acquire::Check-Valid-Until \"false\";" | sudo tee -a /etc/apt/apt.conf.d/90user-cache
           echo "Acquire::Languages \"none\";" | sudo tee -a /etc/apt/apt.conf.d/90user-cache
           sudo chown -R $USER:$USER "$APT_CACHE_DIR"
-
       - name: Set APT Cache
         uses: actions/cache@v3
         with:
@@ -223,7 +226,6 @@ jobs:
           key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/Build SukiSU Ultra OnePlus.yml') }}
           restore-keys: |
             ${{ runner.os }}-apt-
-
       - name: Debug Show Selected Inputs
         run: |
           echo "Selected CPU: ${{ env.CPU }}"
@@ -241,7 +243,6 @@ jobs:
           echo "Selected FAST_BUILD: ${{ github.event.inputs.FAST_BUILD }}"
           echo "Selected SCHED: ${{ github.event.inputs.SCHED }}"
           echo "Selected ZRAM: ${{ github.event.inputs.ZRAM }}"
-
       - name: Install Dependencies
         run: |
           sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock
@@ -253,7 +254,6 @@ jobs:
             build-essential flex bison libssl-dev \
             libncurses-dev liblz4-tool zlib1g-dev \
             libxml2-utils rsync unzip
-
       - name: Restore Ccache
         uses: actions/cache@v3
         with:
@@ -277,17 +277,22 @@ jobs:
             echo "❌ 未安装 ccache，跳过"
           fi
           ccache -s
-
       - name: Install Repo Tool
         run: |
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
           chmod a+x ~/repo
           sudo mv ~/repo /usr/local/bin/repo
-
       - name: Initialize Repo and Sync
         run: |
           mkdir kernel_workspace && cd kernel_workspace
-          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/${{ env.CPU }} -m ${{ github.event.inputs.FILE }}.xml --depth=1
+          FILE="${{ github.event.inputs.FILE }}"
+          if [[ "$FILE" == *"realme"* ]]; then
+            echo "📦 Detected realme device, using realme branch"
+            repo init -u https://github.com/morannlx/kernel_manifest.git -b refs/heads/realme -m "${FILE}.xml" --depth=1
+          else
+            echo "📦 Using default oneplus branch for $FILE"
+            repo init -u https://github.com/morannlx/kernel_manifest.git -b refs/heads/oneplus/${{ env.CPU }} -m "${FILE}.xml" --depth=1
+          fi
           repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync
           if [ -e kernel_platform/common/BUILD.bazel ]; then
             sed -i '/^[[:space:]]*"protected_exports_list"[[:space:]]*:[[:space:]]*"android\/abi_gki_protected_exports_aarch64",$/d' kernel_platform/common/BUILD.bazel
@@ -297,7 +302,6 @@ jobs:
           fi
           rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
           rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
-
       # 自定义内核后缀
       - name: Custom Kernel Suffix if set
         if: ${{ github.event.inputs.SUFFIX != '' }}
@@ -306,24 +310,18 @@ jobs:
           SUFFIX="${{ github.event.inputs.SUFFIX }}"
           ANDROID_VERSION="${{ env.ANDROID_VERSION }}"
           FAST_BUILD="${{ github.event.inputs.FAST_BUILD }}"
-
           for path in \
             kernel_platform/common/scripts/setlocalversion \
             kernel_platform/msm-kernel/scripts/setlocalversion \
             kernel_platform/external/dtc/scripts/setlocalversion; do
-
             [ -f "$path" ] || continue
-
             echo "Modifying: $path"
-
             # Remove -dirty
             sed -i 's/ -dirty//g' "$path"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$path"
-
             if grep -q 'KERNELVERSION.*scm_version' "$path"; then
               echo "Detected NEW setlocalversion format"
               sed -i "s|echo \"\${KERNELVERSION}.*scm_version}\"|echo \"\${KERNELVERSION}-${ANDROID_VERSION}-${SUFFIX}\"|" "$path"
-
             elif grep -q 'echo "\$res"' "$path"; then
               echo "Detected OLD setlocalversion format"
               if [ "$FAST_BUILD" = "true" ]; then
@@ -341,13 +339,10 @@ jobs:
               echo "Unknown format, appending echo manually"
               echo "echo \"\$res-${SUFFIX}\"" >> "$path"
             fi
-
             chmod +x "$path"
           done
-
           git add -A
           git commit -m "Custom suffix & removed -dirty"
-
       # 伪官方格式的随机后缀（仅在 SUFFIX 未设置时生效）*
       - name: Custom Kernel Random Suffix if empty
         if: ${{ github.event.inputs.SUFFIX == '' }}
@@ -355,29 +350,22 @@ jobs:
           cd kernel_workspace
           ANDROID_VERSION="${{ env.ANDROID_VERSION }}"
           FAST_BUILD="${{ github.event.inputs.FAST_BUILD }}"
-
           # 生成随机数字和随机hash
           RANDOM_DIGIT=$(od -An -N1 -tu1 < /dev/urandom | tr -d '[:space:]' | awk '{print $1 % 11}')
           RANDOM_HASH=$(od -An -N7 -tx1 /dev/urandom | tr -d ' \n')
           RANDOM_SUFFIX="${RANDOM_DIGIT}-o-g${RANDOM_HASH}"
-
           for path in \
             kernel_platform/common/scripts/setlocalversion \
             kernel_platform/msm-kernel/scripts/setlocalversion \
             kernel_platform/external/dtc/scripts/setlocalversion; do
-
             [ -f "$path" ] || continue
-
             echo "Modifying: $path"
-
             # Remove -dirty
             sed -i 's/ -dirty//g' "$path"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$path"
-
             if grep -q 'KERNELVERSION.*scm_version' "$path"; then
               echo "Detected NEW setlocalversion format"
               sed -i "s|echo \"\${KERNELVERSION}.*scm_version}\"|echo \"\${KERNELVERSION}-${ANDROID_VERSION}-${RANDOM_SUFFIX}\"|" "$path"
-
             elif grep -q 'echo "\$res"' "$path"; then
               echo "Detected OLD setlocalversion format"
               if [ "$FAST_BUILD" = "true" ]; then
@@ -391,13 +379,10 @@ jobs:
               echo "Unknown format, appending echo manually"
               echo "echo \"\$res-${RANDOM_SUFFIX}\"" >> "$path"
             fi
-
             chmod +x "$path"
           done
-
           git add -A
           git commit -m "Random suffix & remove -dirty"
-
       - name: Download kernel-manifest
         id: fetch_manifest
         run: |
@@ -407,66 +392,51 @@ jobs:
           echo "Downloading manifest $file.xml from branch oneplus/$cpu..."
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused "https://raw.githubusercontent.com/OnePlusOSS/kernel_manifest/oneplus/$cpu/$file.xml"
           mv "$file.xml" ".repo/manifests_fallback/${file}.xml"
-
       - name: Add SukiSU Ultra
         run: |
           cd kernel_workspace/kernel_platform
-
           META="${{ github.event.inputs.KSU_META }}"
           BRANCH_NAME="${META%%/*}"
           CUSTOM_TAG="${META#*/}"
           echo "分支名: $BRANCH_NAME"
           echo "自定义版本标识: $CUSTOM_TAG"
-
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s "$BRANCH_NAME"
           cd ./KernelSU
-
           KSU_API_VERSION=$(curl -fsSL "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/$BRANCH_NAME/kernel/Makefile" | \
             grep -m1 "KSU_VERSION_API :=" | awk -F'= ' '{print $2}' | tr -d '[:space:]')
-
           if [[ -z "$KSU_API_VERSION" || "$(printf '%s\n' "$KSU_API_VERSION" "3.1.7" | sort -V | head -n1)" != "3.1.7" ]]; then
             KSU_API_VERSION="3.1.7"
           fi
-
           echo "KSU_API_VERSION=$KSU_API_VERSION" >> $GITHUB_ENV
-
           GIT_HASH=$(git rev-parse --short HEAD)
           echo "GIT_HASH=$GIT_HASH"
-
           if [[ -z "$CUSTOM_TAG" || "$CUSTOM_TAG" == "$BRANCH_NAME" ]]; then
             VERSION_FULL="v$KSU_API_VERSION-$GIT_HASH@$BRANCH_NAME"
           else
             VERSION_FULL="v$KSU_API_VERSION-$CUSTOM_TAG@$BRANCH_NAME[$GIT_HASH]"
           fi
-
           sed -i '/define get_ksu_version_full/,/endef/d' kernel/Makefile
           sed -i '/KSU_VERSION_API :=/d' kernel/Makefile
           sed -i '/KSU_VERSION_FULL :=/d' kernel/Makefile
-
           VERSION_DEFINITIONS=$(cat <<EOF
             define get_ksu_version_full
             $VERSION_FULL
             endef
-
             KSU_VERSION_API := $KSU_API_VERSION
             KSU_VERSION_FULL := $VERSION_FULL
           EOF
           )
-
           awk -v def="$VERSION_DEFINITIONS" '
             /REPO_OWNER :=/ {print; print def; inserted=1; next}
             1
             END {if (!inserted) print def}
           ' kernel/Makefile > kernel/Makefile.tmp && mv kernel/Makefile.tmp kernel/Makefile
-
           KSU_VERSION=$(expr $(git rev-list --count main 2>/dev/null || echo 13000) + 10700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-
           echo "::group::最终 Makefile 中版本信息及部分调试结果预览"
           grep -A10 "REPO_OWNER" kernel/Makefile
           grep "KSU_VERSION_FULL" kernel/Makefile
           echo "::endgroup::"
-
       - name: Apply Patches SukiSU Ultra
         run: |
           cd kernel_workspace
@@ -477,7 +447,6 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-
           if [ "${{ github.event.inputs.ZRAM }}" = "true" ]; then
             echo "正在拉取zram补丁"
             cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
@@ -485,11 +454,9 @@ jobs:
             cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
             cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           fi
-
           cd ./common
           GKI_V="${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}"
           SUBLEVEL=$(grep '^SUBLEVEL *=' Makefile | head -n1 | cut -d= -f2 | tr -d ' ')
-
           if [ "$GKI_V" == "android13-5.15" ] && [ "$SUBLEVEL" -lt 123 ]; then
             echo "修复内核版本5.15.0到5.15.123仅支持旧版C库造成的一些bug"
             curl -Lo fix_5.15.legacy.patch --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/Numbersf/Action-Build/SukiSU-Ultra/patches/fix_5.15.legacy
@@ -504,7 +471,6 @@ jobs:
               TRUSTY_EXISTS="true"
             fi
             echo "trusty_exists=$TRUSTY_EXISTS" >> $GITHUB_OUTPUT
-
             if [[ "$TRUSTY_EXISTS" == "false" ]]; then
               echo "修复内核版本6.6部分机型缺失Trusty OS导致的susfs的报错"
               sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${KERNEL_VERSION}.patch
@@ -514,7 +480,6 @@ jobs:
           echo "正在打susfs补丁"
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
           echo "susfs_patch完成"
-
       - name: Apply Hide Stuff Patches
         run: |
           cd kernel_workspace/kernel_platform/common
@@ -522,7 +487,6 @@ jobs:
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
           echo "隐藏应用_patch完成"
-
       # OGKI转换GKI，无需修改 dtbo 开机
       - name: Apply Convert HMBIRD_OGKI to HMBIRD_GKI
         if: ${{ env.KERNEL_VERSION == '6.6' }}
@@ -533,7 +497,6 @@ jobs:
           echo "正在打OGKI转换GKI补丁"
           patch -p1 -F 3 < hmbird_patch.patch
           echo "OGKI转换GKI_patch完成"
-
       - name: Apply VFS
         if: ${{ github.event.inputs.VFS == 'true' }}
         run: |
@@ -542,7 +505,6 @@ jobs:
           echo "正在打vfs补丁"
           patch -p1 -F 3 < syscall_hooks.patch
           echo "vfs_patch完成"
-
       - name: Apply ZRAM
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         run: |
@@ -555,22 +517,18 @@ jobs:
           echo "正在打lz4k_oplus补丁"
           patch -p1 -F 3 < lz4k_oplus.patch || true
           echo 'lz4k_oplus_patch完成'
-
       # 配置信息,带*为附加项目,具有一定危险性和不确定性
       - name: Add Configuration Settings
         run: |
           cd kernel_workspace/kernel_platform
           CONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
           KERNEL_VERSION="${{ env.KERNEL_VERSION }}"
-
           # SukiSU Ultra配置
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
-
           # KPM配置
           if [ "${{ github.event.inputs.KPM }}" = "true" ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
           fi
-
           # VFS配置
           if [ "${{ github.event.inputs.VFS }}" = "true" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> "$CONFIG_FILE"
@@ -579,7 +537,6 @@ jobs:
             echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> "$CONFIG_FILE"
             echo "CONFIG_KPROBES=y" >> "$CONFIG_FILE"
           fi
-
           # SUSFS配置
           echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$CONFIG_FILE"
@@ -596,11 +553,9 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
-
           # TMPFS配置*
           echo "CONFIG_TMPFS_XATTR=y" >> "$CONFIG_FILE"
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$CONFIG_FILE"
-
           # BBR配置*
           echo "CONFIG_TCP_CONG_ADVANCED=y" >> "$CONFIG_FILE"
           echo "CONFIG_TCP_CONG_BBR=y" >> "$CONFIG_FILE"
@@ -608,13 +563,11 @@ jobs:
           echo "CONFIG_TCP_CONG_BIC=n" >> "$CONFIG_FILE"
           echo "CONFIG_TCP_CONG_WESTWOOD=n" >> "$CONFIG_FILE"
           echo "CONFIG_TCP_CONG_HTCP=n" >> "$CONFIG_FILE"
-
           # ECN配置*
           echo "CONFIG_IP_ECN=y" >> "$CONFIG_FILE"
           echo "CONFIG_TCP_ECN=y" >> "$CONFIG_FILE"
           echo "CONFIG_IPV6_ECN=y" >> "$CONFIG_FILE"
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> "$CONFIG_FILE"
-
           # ZRAM配置*
           if [ "${{ github.event.inputs.ZRAM }}" = "true" ]; then
             echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
@@ -624,10 +577,8 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
             echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
           fi
-
           # 移除构建审查
           sed -i 's/check_defconfig//' ./common/build.config.gki
-
       # 风驰内核，以 sm8750 为主体，其他 CPU 可能无效或者无法跑出
       - name: Add sched_ext
         if: ${{ github.event.inputs.SCHED == 'true' }}
@@ -637,7 +588,6 @@ jobs:
           cp -r ./sched_ext/* ./common/kernel/sched
           rm -rf ./sched_ext/.git
           cd common/kernel/sched
-
       # Custom kernel build time, without adding #1 SMP PREEMPT 自定义内核构建时间，不要加入#1 SMP PREEMPT
       - name: Custom BUILD_TIME
         if: ${{ github.event.inputs.BUILD_TIME != '' && !contains('Ff', github.event.inputs.BUILD_TIME) }}
@@ -657,7 +607,6 @@ jobs:
               fi
             fi
           done
-
       - name: Enable lto=thin For FAST
         if: ${{ (env.KERNEL_VERSION == '5.10' || env.KERNEL_VERSION == '5.15') && github.event.inputs.FAST_BUILD == 'true' }}
         run: |
@@ -668,7 +617,6 @@ jobs:
           sed -i 's/^CONFIG_LTO_CLANG_FULL=y/CONFIG_LTO_CLANG_THIN=y/' "$DEFCONFIG"
           sed -i 's/^CONFIG_LTO_CLANG_NONE=y/CONFIG_LTO_CLANG_THIN=y/' "$DEFCONFIG"
           grep -q '^CONFIG_LTO_CLANG_THIN=y' "$DEFCONFIG" || echo 'CONFIG_LTO_CLANG_THIN=y' >> "$DEFCONFIG"
-
       - name: Build Kernel FAST
         if: ${{ github.event.inputs.FAST_BUILD == 'true' }}
         id: fast_build
@@ -708,7 +656,6 @@ jobs:
           make -j$(nproc --all) O=out $MAKE_ARGS gki_defconfig
           make -j$(nproc --all) O=out $MAKE_ARGS
           ccache -s
-
       - name: Fallback to Build Kernel
         if: ${{ github.event.inputs.FAST_BUILD == 'false' || steps.fast_build.outputs.fallback == 'true' }}
         run: |
@@ -720,7 +667,6 @@ jobs:
             LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 \
             ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.CPUD }} ${{ env.BUILD_METHOD }}
           fi
-
       - name: Make AnyKernel3
         run: |
           git clone https://github.com/Numbersf/AnyKernel3 --depth=1
@@ -762,7 +708,6 @@ jobs:
               fi
             done
           fi
-
       - name: Apply patch_linux and replace Image
         if: ${{ github.event.inputs.KPM == 'true' }}
         run: |
@@ -773,7 +718,6 @@ jobs:
           rm -f Image
           mv oImage Image
           cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
-
       - name: Download Latest SUSFS Module from CI
         if: ${{ github.event.inputs.SUSFS_CI == 'CI' }}
         continue-on-error: true
@@ -793,14 +737,12 @@ jobs:
               echo "Failed to fetch artifact URL"
             fi
           fi
-
       - name: Download Latest SUSFS Module from Release
         if: ${{ github.event.inputs.SUSFS_CI == 'Release' }}
         continue-on-error: true
         run: |
           wget -O ksu_module_susfs_1.5.2+_Release.zip https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
           cp ksu_module_susfs_1.5.2+_Release.zip ./AnyKernel3/
-
       - name: Download Latest SukiSU-Ultra APK from CI
         continue-on-error: true
         env:
@@ -823,12 +765,10 @@ jobs:
               unzip -j manager.zip "*.apk" -d ./AnyKernel3/
             fi
           fi
-
       - name: Set zip Suffix
         id: suffix
         run: |
           echo "value=${{ github.event.inputs.VFS == 'true' && '_VFS' || '' }}${{ github.event.inputs.ZRAM == 'true' && '_LZ4KD' || '' }}${{ github.event.inputs.KPM == 'true' && '_KPM' || '' }}${{ github.event.inputs.SCHED== 'true' && '_SCHED' || '' }}" >> $GITHUB_OUTPUT
-
       # 从一加源码中获取适用的 Android 版本信息，注意是系统 Android 版本而非你填写的内核 Android 版本，非一加官方源码可能需要修改或删除这一步
       - name: Auto map FILE to Android version by manifest
         id: file_clean
@@ -844,13 +784,12 @@ jobs:
             if [ -n "$android_ver" ]; then
               clean_file="${file_base}_Android${android_ver}"
             else
-              clean_file="${file_base}_AndroidUnknown"
+              clean_file="${file_base}"
             fi
           else
-            clean_file="${file_base}_AndroidUnknown"
+            clean_file="${file_base}"
           fi
           echo "value=$clean_file" >> "$GITHUB_OUTPUT"
-
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v4
         with:
@@ -893,7 +832,6 @@ jobs:
             echo "upload=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
       - name: Upload ZRAM Module
         if: ${{ github.event.inputs.ZRAM == 'true' && steps.zram_find.outputs.upload != 'false' }}
         uses: actions/upload-artifact@v4
