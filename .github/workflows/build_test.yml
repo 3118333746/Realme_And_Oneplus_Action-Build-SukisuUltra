@@ -145,7 +145,7 @@ jobs:
             ["realme_gt7pro-speed"]="sm8750 sun android15 6.6"
             ["realme_gtneo6_v"]="sm8635 pineapple android14 6.1"
             ["realme_neo7_v"]="mt6989 pineapple android14 6.1"
-            ["realme_neo7se_v"]="mt6899 pineapple android14 6.1"
+            ["realme_neo7se_v"]="mt6899 pineapple android15 6.6"
           )
           get_combination() {
             local key="$1"
