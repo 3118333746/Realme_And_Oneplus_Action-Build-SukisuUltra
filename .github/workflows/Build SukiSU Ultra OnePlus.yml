@@ -766,7 +766,9 @@ jobs:
             else
               echo "Downloading from: $artifact_url"
               curl -fL -H "Authorization: token $GITHUB_TOKEN" -o manager.zip "$artifact_url"
-              unzip -j manager.zip "*.apk" -d ./AnyKernel3/Sukisu-Ultra.apk
+              unzip -j manager.zip "*.apk" -d ./AnyKernel3/
+              echo "重命名为Sukisu-Ultra.apk"
+              find ./AnyKernel3 -type f -iname '*.apk' -exec mv {} ./AnyKernel3/SukiSU-Ultra.apk \;
             fi
           fi
       - name: Set zip Suffix
