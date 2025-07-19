@@ -2,7 +2,7 @@
  
 [![Build](https://img.shields.io/badge/GitHub%20Actions-Build-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/morannlx/Realme_And_Oneplus_Action-Build-SukisuUltra/actions/workflows/Build%20SukiSU%20Ultra%20OnePlus.ym) [![OnePlus Kernel Manifest](https://img.shields.io/badge/%20Kernel%20Manifest-EB0029?logo=oneplus&logoColor=white&style=flat-square)](https://github.com/morannlx/kernel_manifest) [![Coolapk](https://img.shields.io/badge/Follow-Coolapk-3DDC84?style=flat-square&logo=android&logoColor=white)](http://www.coolapk.com/u/3473766)
  
-# Action-Build
+# Realme_And_Oneplus_Action-Build-SukisuUltra
 **```Build All OnePlus And Realme Devices SukiSU Ultra Kernel```**
 >更高效 更全面 更快速 更稳定
 >此仓库适配国内realme机型，同步官方源码进行更新，目前支持7款机型
