@@ -673,7 +673,7 @@ jobs:
           fi
       - name: Make AnyKernel3
         run: |
-          git clone https://github.com/Numbersf/AnyKernel3 --depth=1
+          git clone https://github.com/morannlx/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           mkdir -p kernel_workspace/kernel_platform/out/Final-Image-Find/
           dir1=""
@@ -716,7 +716,7 @@ jobs:
         if: ${{ github.event.inputs.KPM == 'true' }}
         run: |
           cd kernel_workspace/kernel_platform/out/Final-Image-Find
-          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/Numbersf/Action-Build/SukiSU-Ultra/patches/patch_linux
+          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/morannlx/Realme_And_Oneplus_Action-Build-SukisuUltra/SukiSU-Ultra/patches/patch_linux
           chmod +x patch_linux
           ./patch_linux
           rm -f Image
@@ -766,7 +766,7 @@ jobs:
             else
               echo "Downloading from: $artifact_url"
               curl -fL -H "Authorization: token $GITHUB_TOKEN" -o manager.zip "$artifact_url"
-              unzip -j manager.zip "*.apk" -d ./AnyKernel3/
+              unzip -j manager.zip "*.apk" -d ./AnyKernel3/Sukisu-Ultra.apk
             fi
           fi
       - name: Set zip Suffix
