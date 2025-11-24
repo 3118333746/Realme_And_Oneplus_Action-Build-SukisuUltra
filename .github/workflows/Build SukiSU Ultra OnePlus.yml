@@ -182,7 +182,6 @@ jobs:
             echo "MANIFEST_REPO=OnePlusOSS" >> $GITHUB_ENV
             echo "MANIFEST_BRANCH=$FOUND_BRANCH" >> $GITHUB_ENV
           fi
-
           # 动态仓库寻找文件
           if [[ -z "$FOUND_REPO" ]]; then
             DYNAMIC_URL="${REPOS["Dynamic"]}"
@@ -192,21 +191,10 @@ jobs:
               echo "MANIFEST_BRANCH=$FOUND_BRANCH" >> $GITHUB_ENV
             fi
           fi
-
           if [[ -z "$FOUND_REPO" || ! -s "$XML_PATH" ]]; then
             echo "❌ 无法在动态仓库中找到 ${FILE}.xml"
             exit 1
           fi
-          
-          #  realme 分支
-          
-            echo "✅ 预设 CPU=$CPU, ANDROID_VERSION=$ANDROID_VERSION"
-            {
-              echo "CPU=realme"
-              echo "ANDROID_VERSION=Android"
-              echo "ANDROID_SHORT_VERSION=unknow"
-            } >> $GITHUB_ENV
-          else
           # 解析 revision 字符串
           REVISION=$(grep -oP '<project[^>]+revision="\K[^"]+' "$XML_PATH" | head -n1 || true)
           echo "解析 FILE 获取 CPU 和 ANDROID_VERSION..."
@@ -224,7 +212,6 @@ jobs:
             echo "❌ 无法从 revision 中提取 CPU 或 ANDROID_VERSION"
             exit 1
           fi
-
           echo "解析 README.md 获取 CPUD 和 BUILD_METHOD..."
           if [[ -s "$README_PATH" ]]; then
             BUILD_LINE=$(grep -m1 'oplus_build_kernel.sh' "$README_PATH" || true)
@@ -242,6 +229,7 @@ jobs:
           fi
           # 传递组合信息
           echo "value=${FILE_BASE}_Android${ANDROID_VERSION}" >> "$GITHUB_OUTPUT"
+
 
       - name: Debug Show Selected Inputs
         run: |
