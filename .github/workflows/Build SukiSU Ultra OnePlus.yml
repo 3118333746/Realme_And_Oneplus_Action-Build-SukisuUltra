@@ -41,11 +41,15 @@ on:
           - oneplus_15
           - realme_gt6_v
           - realme_gt6_v_6.1.118
+          - realme_gt6_b
           - realme_gt5pro_v
           - realme_gt5_v
           - realme_gt7pro_v
+          - realme_gt7pro_b
           - realme_gt7pro-speed_v
           - realme_gtneo6_v
+          - realme_gtneo6_b
+          - realme_gtneo6se_b
           - realme_neo7_v
       SUSFS_CI:
         type: choice
