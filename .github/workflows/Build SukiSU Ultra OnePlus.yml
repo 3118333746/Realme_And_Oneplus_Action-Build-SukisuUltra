@@ -199,29 +199,12 @@ jobs:
           fi
           
           #  realme 分支
-          if [[ "$FILE" =~ ^realme_ ]]; then
-            echo "🟡 realme 机型，跳过 revision 解析"
-            suffix=${FILE##*_}
-            case "$suffix" in
-               v) ANDROID_VERSION=15.0.0 ;;
-               b) ANDROID_VERSION=16.0.0 ;;
-               c) ANDROID_VERSION=16.0.0 ;;   
-               d) ANDROID_VERSION=17.0.0 ;;
-               *) ANDROID_VERSION=15.0.0 ;;   
-            esac
-            ANDROID_SHORT_VERSION=${ANDROID_VERSION%%.*}
-            case "$FILE" in
-              realme_gt6*)   CPU=sm8650 ;;
-              realme_gt7*)   CPU=sm8750 ;;
-              realme_gtneo6*)CPU=sm8635 ;;
-               *)            CPU=unknnow ;;  
-            esac
-
+          
             echo "✅ 预设 CPU=$CPU, ANDROID_VERSION=$ANDROID_VERSION"
             {
-              echo "CPU=$CPU"
-              echo "ANDROID_VERSION=$ANDROID_VERSION"
-              echo "ANDROID_SHORT_VERSION=$ANDROID_SHORT_VERSION"
+              echo "CPU=realme"
+              echo "ANDROID_VERSION=Android"
+              echo "ANDROID_SHORT_VERSION=unknow"
             } >> $GITHUB_ENV
           else
           # 解析 revision 字符串
