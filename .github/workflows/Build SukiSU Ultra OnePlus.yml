@@ -195,6 +195,23 @@ jobs:
             echo "❌ 无法在动态仓库中找到 ${FILE}.xml"
             exit 1
           fi
+
+          case "$FILE" in
+            realme_*)
+                CPU=$(echo "$FILE" | sed -E 's/realme_([^_]+)_.*/\1/')   # gt6 / gt5 / gtneo6 …
+                ANDROID_VERSION="14.0"                                   # 按你仓库实际版本改
+                echo "✅ Realme 分支：跳过 revision 解析，直接注入"
+                echo "CPU=$CPU" >> $GITHUB_ENV
+                echo "ANDROID_VERSION=$ANDROID_VERSION" >> $GITHUB_ENV
+                echo "ANDROID_SHORT_VERSION=${ANDROID_VERSION%%.*}" >> $GITHUB_ENV
+                # Realme 仓库里没有 README.md 也能自己拼
+                CPUD="$CPU"
+                BUILD_METHOD="gki"                                       # 或 ogki / vendor 等
+                echo "CPUD=$CPUD" >> $GITHUB_ENV
+                echo "BUILD_METHOD=$BUILD_METHOD" >> $GITHUB_ENV
+                ;;
+            *)
+
           # 解析 revision 字符串
           REVISION=$(grep -oP '<project[^>]+revision="\K[^"]+' "$XML_PATH" | head -n1 || true)
           echo "解析 FILE 获取 CPU 和 ANDROID_VERSION..."
@@ -227,6 +244,8 @@ jobs:
           else
             echo "❌ README.md 下载失败或为空"
           fi
+          ;;
+          esac
           # 传递组合信息
           echo "value=${FILE_BASE}_Android${ANDROID_VERSION}" >> "$GITHUB_OUTPUT"
 
