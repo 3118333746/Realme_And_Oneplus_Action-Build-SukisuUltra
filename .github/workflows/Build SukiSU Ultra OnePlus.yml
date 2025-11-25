@@ -24,9 +24,12 @@ on:
           - oneplus_open_v
           - oneplus_open_b
           - oneplus_12_v
+          - oneplus_12_b
           - oneplus_13r
+          - oneplus_13r_b
           - oneplus_ace3_pro_v
           - oneplus_ace5
+          - oneplus_ace5_b
           - oneplus_pad_pro_v
           - oneplus_pad2_v
           - oneplus_nord_5
@@ -629,10 +632,10 @@ jobs:
           echo "隐藏应用_patch完成"
       # OGKI转换GKI，无需修改 dtbo 开机
       - name: Apply Convert HMBIRD_OGKI to HMBIRD_GKI
-        if: ${{ env.KERNEL_VERSION == '6.6' && github.event.inputs.SCHED == 'false' }}
+        if: fromJson(env.KERNEL_VERSION) >= 6.6 && github.event.inputs.SCHED == 'false'
         run: |
           cd kernel_workspace/kernel_platform/common
-          if [ -d "./kernel/sched/hmbird" ]; then
+          if [ -d "./kernel/sched/hmbird*" ] || [ -d "./vendor/oplus/kernel/cpu/sched_ext/hmbird*" ]; then
             echo "源码中风驰补丁已经存在，启用二次回退"
             exit 0
           fi
